@@ -35,13 +35,11 @@ namespace Sample.MultilingualContent.Data
                 .HasOne(x => x.Title)
                 .WithOne()
                 .HasForeignKey<Post>(x => x.TitleId)
-                //.HasPrincipalKey<Post>(x => x.TitleId)
                 ;
             modelBuilder.Entity<Post>()
                 .HasOne(x => x.Content)
                 .WithOne()
                 .HasForeignKey<Post>(x => x.ContentId)
-                //.HasPrincipalKey<Post>(x => x.ContentId)
                 ;
 
 
