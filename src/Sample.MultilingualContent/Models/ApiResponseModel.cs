@@ -12,7 +12,12 @@ namespace Sample.MultilingualContent.Models
 
         public string Message { get; init; }
     }
-    
+
+    public class ApiResponseModel : ApiResponseModelBase
+    {
+
+    }
+
     public class ApiResponseModel<T> :ApiResponseModelBase
     {
         public T Data { get; init; }

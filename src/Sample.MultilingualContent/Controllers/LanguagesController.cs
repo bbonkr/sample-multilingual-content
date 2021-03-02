@@ -12,8 +12,10 @@ using Sample.MultilingualContent.Repositories;
 
 namespace Sample.MultilingualContent.Controllers
 {
+    [ApiVersion("1.0")]
     [ApiController]
-    [Route("[controller]")]
+    [Area("api")]
+    [Route("[area]/v{version:apiVersion}/[controller]")]
     public class LanguagesController : ApiControllerBase
     {
         public LanguagesController(ILanguageRepository repository, ILoggerFactory loggerFactory)

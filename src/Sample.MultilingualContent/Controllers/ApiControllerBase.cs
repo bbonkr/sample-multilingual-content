@@ -23,5 +23,10 @@ namespace Sample.MultilingualContent.Controllers
         {
             return base.StatusCode((int)statusCode, ApiResponseModelFactory.Create(statusCode, string.Empty, value));
         }
+
+        public ObjectResult StatusCode<T>([ActionResultStatusCode] HttpStatusCode statusCode, string message)
+        {
+            return base.StatusCode((int)statusCode, ApiResponseModelFactory.Create(statusCode, message));
+        }
     }
 }

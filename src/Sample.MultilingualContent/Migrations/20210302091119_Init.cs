@@ -18,7 +18,7 @@ namespace Sample.MultilingualContent.Migrations
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
-                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -33,7 +33,7 @@ namespace Sample.MultilingualContent.Migrations
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
-                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -41,33 +41,32 @@ namespace Sample.MultilingualContent.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Localization",
+                name: "Localizations",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    LanguageId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    LanguageId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Value = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LocalizationSetId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
-                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Localization", x => x.Id);
+                    table.PrimaryKey("PK_Localizations", x => new { x.Id, x.LanguageId });
                     table.ForeignKey(
-                        name: "FK_Localization_Languages_LanguageId",
+                        name: "FK_Localizations_Languages_LanguageId",
                         column: x => x.LanguageId,
                         principalTable: "Languages",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Localization_LocalizationSet_LocalizationSetId",
-                        column: x => x.LocalizationSetId,
+                        name: "FK_Localizations_LocalizationSet_Id",
+                        column: x => x.Id,
                         principalTable: "LocalizationSet",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -80,7 +79,7 @@ namespace Sample.MultilingualContent.Migrations
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
-                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    DeletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -100,30 +99,29 @@ namespace Sample.MultilingualContent.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Localization_LanguageId",
-                table: "Localization",
+                name: "IX_Localizations_LanguageId",
+                table: "Localizations",
                 column: "LanguageId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Localization_LocalizationSetId",
-                table: "Localization",
-                column: "LocalizationSetId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Posts_ContentId",
                 table: "Posts",
-                column: "ContentId");
+                column: "ContentId",
+                unique: true,
+                filter: "[ContentId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Posts_TitleId",
                 table: "Posts",
-                column: "TitleId");
+                column: "TitleId",
+                unique: true,
+                filter: "[TitleId] IS NOT NULL");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Localization");
+                name: "Localizations");
 
             migrationBuilder.DropTable(
                 name: "Posts");

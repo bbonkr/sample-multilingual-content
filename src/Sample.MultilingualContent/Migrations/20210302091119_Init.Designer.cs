@@ -10,7 +10,7 @@ using Sample.MultilingualContent.Data;
 namespace Sample.MultilingualContent.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20210218061005_Init")]
+    [Migration("20210302091119_Init")]
     partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,7 @@ namespace Sample.MultilingualContent.Migrations
             modelBuilder.Entity("Sample.MultilingualContent.Entities.Language", b =>
                 {
                     b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Code")
@@ -32,7 +33,7 @@ namespace Sample.MultilingualContent.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<DateTimeOffset>("DeletedAt")
+                    b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Description")
@@ -57,20 +58,17 @@ namespace Sample.MultilingualContent.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("LanguageId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<DateTimeOffset>("DeletedAt")
+                    b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<string>("LanguageId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("LocalizationSetId")
-                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
@@ -78,24 +76,23 @@ namespace Sample.MultilingualContent.Migrations
                     b.Property<string>("Value")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id", "LanguageId");
 
                     b.HasIndex("LanguageId");
 
-                    b.HasIndex("LocalizationSetId");
-
-                    b.ToTable("Localization");
+                    b.ToTable("Localizations");
                 });
 
             modelBuilder.Entity("Sample.MultilingualContent.Entities.LocalizationSet", b =>
                 {
                     b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<DateTimeOffset>("DeletedAt")
+                    b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<bool>("IsDeleted")
@@ -112,6 +109,7 @@ namespace Sample.MultilingualContent.Migrations
             modelBuilder.Entity("Sample.MultilingualContent.Entities.Post", b =>
                 {
                     b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ContentId")
@@ -120,7 +118,7 @@ namespace Sample.MultilingualContent.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<DateTimeOffset>("DeletedAt")
+                    b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<bool>("IsDeleted")
@@ -134,22 +132,30 @@ namespace Sample.MultilingualContent.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ContentId");
+                    b.HasIndex("ContentId")
+                        .IsUnique()
+                        .HasFilter("[ContentId] IS NOT NULL");
 
-                    b.HasIndex("TitleId");
+                    b.HasIndex("TitleId")
+                        .IsUnique()
+                        .HasFilter("[TitleId] IS NOT NULL");
 
                     b.ToTable("Posts");
                 });
 
             modelBuilder.Entity("Sample.MultilingualContent.Entities.Localization", b =>
                 {
-                    b.HasOne("Sample.MultilingualContent.Entities.Language", "Language")
-                        .WithMany()
-                        .HasForeignKey("LanguageId");
-
                     b.HasOne("Sample.MultilingualContent.Entities.LocalizationSet", "LocalizationSet")
                         .WithMany("Contents")
-                        .HasForeignKey("LocalizationSetId");
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Sample.MultilingualContent.Entities.Language", "Language")
+                        .WithMany("Localizations")
+                        .HasForeignKey("LanguageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Language");
 
@@ -159,16 +165,21 @@ namespace Sample.MultilingualContent.Migrations
             modelBuilder.Entity("Sample.MultilingualContent.Entities.Post", b =>
                 {
                     b.HasOne("Sample.MultilingualContent.Entities.LocalizationSet", "Content")
-                        .WithMany()
-                        .HasForeignKey("ContentId");
+                        .WithOne()
+                        .HasForeignKey("Sample.MultilingualContent.Entities.Post", "ContentId");
 
                     b.HasOne("Sample.MultilingualContent.Entities.LocalizationSet", "Title")
-                        .WithMany()
-                        .HasForeignKey("TitleId");
+                        .WithOne()
+                        .HasForeignKey("Sample.MultilingualContent.Entities.Post", "TitleId");
 
                     b.Navigation("Content");
 
                     b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("Sample.MultilingualContent.Entities.Language", b =>
+                {
+                    b.Navigation("Localizations");
                 });
 
             modelBuilder.Entity("Sample.MultilingualContent.Entities.LocalizationSet", b =>

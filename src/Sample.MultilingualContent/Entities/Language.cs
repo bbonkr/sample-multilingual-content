@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Sample.MultilingualContent.Entities
@@ -18,6 +19,8 @@ namespace Sample.MultilingualContent.Entities
         /// <summary>
         /// Description for management.
         /// </summary>
-        public string Description { get; set; }        
+        public string Description { get; set; }
+
+        public virtual IList<Localization> Localizations { get; set; }
     }
 }

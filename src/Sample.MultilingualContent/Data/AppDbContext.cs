@@ -26,10 +26,38 @@ namespace Sample.MultilingualContent.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Language>().HasKey(x => x.Id);
             modelBuilder.Entity<Language>().Property(x => x.Id).ValueGeneratedOnAdd();
+            //modelBuilder.Entity<Language>().Property(x => x.Code).IsRequired()
+
             modelBuilder.Entity<Post>().Property(x => x.Id).ValueGeneratedOnAdd();
-            modelBuilder.Entity<Localization>().Property(x => x.Id).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Post>()
+                .HasOne(x => x.Title)
+                .WithOne()
+                .HasForeignKey<Post>(x => x.TitleId)
+                //.HasPrincipalKey<Post>(x => x.TitleId)
+                ;
+            modelBuilder.Entity<Post>()
+                .HasOne(x => x.Content)
+                .WithOne()
+                .HasForeignKey<Post>(x => x.ContentId)
+                //.HasPrincipalKey<Post>(x => x.ContentId)
+                ;
+
+
+            modelBuilder.Entity<LocalizationSet>().HasKey(x => x.Id);
             modelBuilder.Entity<LocalizationSet>().Property(x => x.Id).ValueGeneratedOnAdd();
+            
+            modelBuilder.Entity<LocalizationSet>()
+                .HasMany(x => x.Contents)
+                .WithOne(x => x.LocalizationSet)
+                .HasForeignKey(x => x.Id);
+
+            modelBuilder.Entity<Localization>().HasKey(x => new { x.Id, x.LanguageId });
+            modelBuilder.Entity<Localization>().Property(x => x.Id).IsRequired();
+            modelBuilder.Entity<Localization>().Property(x => x.LanguageId).IsRequired();
+            modelBuilder.Entity<Localization>().HasOne(x => x.LocalizationSet).WithMany(x => x.Contents).HasForeignKey(x => x.Id);
+            modelBuilder.Entity<Localization>().HasOne(x => x.Language).WithMany(x => x.Localizations).HasForeignKey(x => x.LanguageId);
         }
     }
 }

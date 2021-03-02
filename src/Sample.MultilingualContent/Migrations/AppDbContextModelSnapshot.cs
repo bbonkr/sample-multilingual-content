@@ -54,7 +54,9 @@ namespace Sample.MultilingualContent.Migrations
             modelBuilder.Entity("Sample.MultilingualContent.Entities.Localization", b =>
                 {
                     b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("LanguageId")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -66,23 +68,15 @@ namespace Sample.MultilingualContent.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LanguageId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("LocalizationSetId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Value")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id", "LanguageId");
 
                     b.HasIndex("LanguageId");
-
-                    b.HasIndex("LocalizationSetId");
 
                     b.ToTable("Localizations");
                 });
@@ -136,22 +130,30 @@ namespace Sample.MultilingualContent.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ContentId");
+                    b.HasIndex("ContentId")
+                        .IsUnique()
+                        .HasFilter("[ContentId] IS NOT NULL");
 
-                    b.HasIndex("TitleId");
+                    b.HasIndex("TitleId")
+                        .IsUnique()
+                        .HasFilter("[TitleId] IS NOT NULL");
 
                     b.ToTable("Posts");
                 });
 
             modelBuilder.Entity("Sample.MultilingualContent.Entities.Localization", b =>
                 {
-                    b.HasOne("Sample.MultilingualContent.Entities.Language", "Language")
-                        .WithMany()
-                        .HasForeignKey("LanguageId");
-
                     b.HasOne("Sample.MultilingualContent.Entities.LocalizationSet", "LocalizationSet")
                         .WithMany("Contents")
-                        .HasForeignKey("LocalizationSetId");
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Sample.MultilingualContent.Entities.Language", "Language")
+                        .WithMany("Localizations")
+                        .HasForeignKey("LanguageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Language");
 
@@ -161,16 +163,21 @@ namespace Sample.MultilingualContent.Migrations
             modelBuilder.Entity("Sample.MultilingualContent.Entities.Post", b =>
                 {
                     b.HasOne("Sample.MultilingualContent.Entities.LocalizationSet", "Content")
-                        .WithMany()
-                        .HasForeignKey("ContentId");
+                        .WithOne()
+                        .HasForeignKey("Sample.MultilingualContent.Entities.Post", "ContentId");
 
                     b.HasOne("Sample.MultilingualContent.Entities.LocalizationSet", "Title")
-                        .WithMany()
-                        .HasForeignKey("TitleId");
+                        .WithOne()
+                        .HasForeignKey("Sample.MultilingualContent.Entities.Post", "TitleId");
 
                     b.Navigation("Content");
 
                     b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("Sample.MultilingualContent.Entities.Language", b =>
+                {
+                    b.Navigation("Localizations");
                 });
 
             modelBuilder.Entity("Sample.MultilingualContent.Entities.LocalizationSet", b =>

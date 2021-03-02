@@ -11,20 +11,21 @@ namespace Sample.MultilingualContent.Data
     {
         public static void Seed(AppDbContext dbContext)
         {
-            SeedLanguages(dbContext);
+            SeedLanguages(dbContext, true);
         } 
 
-        private static void SeedLanguages(AppDbContext dbContext)
+        private static void SeedLanguages(AppDbContext dbContext, bool reset = false)
         {
             if (!dbContext.Languages.Any())
             {
                 dbContext.Languages.AddRange(
-                    CreateLanguage("ko-KR", "한국어"),
-                    CreateLanguage("en-US", "English"),
-                    CreateLanguage("ru-RU", "русский"),
-                    CreateLanguage("ja-JP", "日本語"),
-                    CreateLanguage("zh-CN", "中国語"),
-                    CreateLanguage("es-ES", "española")
+                    CreateLanguage("ko", "한국어"),
+                    CreateLanguage("en", "English"),
+                    CreateLanguage("ru", "русский"),
+                    CreateLanguage("ja", "日本語"),
+                    CreateLanguage("zh-Hans", "简体中文"),
+                    CreateLanguage("zh-Hant", "中国传统的"),
+                    CreateLanguage("es", "española")
                     );
 
                 dbContext.SaveChanges();
