@@ -19,7 +19,9 @@ namespace Sample.MultilingualContent.Repositories
 
         Task<PostDetailModel> GetPost(string id, string languageCode);
 
-        Task<PostDetailModel> SaveAsync(PostSaveRequestModel model);
+        Task<PostDetailModel> SaveAsync( PostSaveRequestModel model);
+
+        Task DeleteAsync(PostSaveRequestModel model);
     }
 
     public class PostRepository : IPostRepository
@@ -45,7 +47,7 @@ namespace Sample.MultilingualContent.Repositories
             var query = from post in dbContext.Posts
                         join title in dbContext.Localizations on post.TitleId equals title.Id
                         join content in dbContext.Localizations on post.ContentId equals content.Id
-                        where title.LanguageId == language.Id && content.LanguageId == language.Id
+                        where !post.IsDeleted && title.LanguageId == language.Id && content.LanguageId == language.Id
                         orderby post.CreatedAt descending
                         select new PostModel(post.Id, title.Value, content.Value)
                         ;
@@ -74,7 +76,7 @@ namespace Sample.MultilingualContent.Repositories
                 .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
                 .AsSingleQuery()
                 .AsNoTracking()
-                .Where(post => post.Id == id);
+                .Where(post => !post.IsDeleted && post.Id == id);
 
 
             var postEntry = await query.FirstOrDefaultAsync();
@@ -99,8 +101,7 @@ namespace Sample.MultilingualContent.Repositories
             var post = dbContext.Posts
                 .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
                 .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
-                .Where(post => post.Id == model.Id).FirstOrDefault();
-
+                .Where(post => !post.IsDeleted && post.Id == model.Id).FirstOrDefault();
 
             var languages = dbContext.Languages.ToList();
 
@@ -245,6 +246,24 @@ namespace Sample.MultilingualContent.Repositories
             return postModel;
         }
 
+        public async Task DeleteAsync(PostSaveRequestModel model)
+        {
+            var postId = model.Id;
+
+            var post = dbContext.Posts
+              .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
+              .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
+              .Where(post => !post.IsDeleted && post.Id == postId).FirstOrDefault();
+
+            if (post == null)
+            {
+                throw new Exception($"Could not find a post ({postId})");
+            }
+
+            post.IsDeleted = true;
+
+            await dbContext.SaveChangesAsync();
+        }
 
         private readonly AppDbContext dbContext;
         private readonly ITranslatorService translatorService;

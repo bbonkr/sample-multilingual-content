@@ -25,7 +25,10 @@ namespace Sample.MultilingualContent.Repositories
 
         public async Task<IEnumerable<LanguageModel>> GetAllAsync()
         {
-            var query = dbContext.Languages.Select(lang => new LanguageModel(lang.Id, lang.Code, lang.Name));
+            var query = dbContext.Languages
+                .Where(lang => !lang.IsDeleted)
+                .OrderBy(lang => lang.Name)
+                .Select(lang => new LanguageModel(lang.Id, lang.Code, lang.Name));
 
             var result = await query.ToListAsync();
 

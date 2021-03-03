@@ -25,7 +25,7 @@ namespace Sample.MultilingualContent.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(ApiResponseModel<IEnumerable<LanguageModel>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<IEnumerable<LanguageModel>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetAllAsync()
         {
             var languages = await repository.GetAllAsync();

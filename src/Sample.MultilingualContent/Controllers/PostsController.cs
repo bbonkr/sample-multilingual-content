@@ -30,6 +30,8 @@ namespace Sample.MultilingualContent.Controllers
         {
             var posts = await repository.GetAllAsync(language, page, take);
 
+            logger.LogInformation($"{nameof(PostsController)}.{nameof(GetAllAsync)} posts.count={posts.Count():n0}");
+
             return StatusCode((int)HttpStatusCode.OK, posts);
         }
 
@@ -38,9 +40,26 @@ namespace Sample.MultilingualContent.Controllers
         [ProducesResponseType(typeof(ApiResponseModel<IEnumerable<PostModel>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetPost(string id, string language = "")
         {
-            var post = await repository.GetPost(id, language);
+            try
+            {
+                var post = await repository.GetPost(id, language);
+                logger.LogInformation($"{nameof(PostsController)}.{nameof(GetPost)} post.found={post != null}");
+                if (post == null)
+                {
+                    throw new RecordNotFoundException($"Could not find a post ({id})");
+                }
 
-            return StatusCode((int)HttpStatusCode.OK, post);
+                return StatusCode((int)HttpStatusCode.OK, post);
+            }
+            catch (RecordNotFoundException ex)
+            {
+                return StatusCode(HttpStatusCode.NotFound, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(HttpStatusCode.InternalServerError, ex.Message);
+            }
+
         }
 
         [HttpPost]
@@ -48,15 +67,26 @@ namespace Sample.MultilingualContent.Controllers
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
         public async Task<IActionResult> InsertAsync(PostSaveRequestModel model)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var post = await repository.SaveAsync(model);
+                if (ModelState.IsValid)
+                {
+                    var post = await repository.SaveAsync(model);
 
-                return StatusCode(HttpStatusCode.Created, post);
+                    return StatusCode(HttpStatusCode.Created, post);
+                }
+                else
+                {
+                    return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
+                }
             }
-            else
+            catch (RecordNotFoundException ex)
             {
-                return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
+                return StatusCode(HttpStatusCode.NotFound, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(HttpStatusCode.InternalServerError, ex.Message);
             }
         }
 
@@ -66,16 +96,39 @@ namespace Sample.MultilingualContent.Controllers
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
         public async Task<IActionResult> UpdateAsync(string id, PostSaveRequestModel model)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var post = await repository.SaveAsync(model);
+                if (!id.Equals(model.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidRequestException($"Request body is invalid.");
+                }
 
-                return StatusCode(HttpStatusCode.Accepted, post);
+                if (ModelState.IsValid)
+                {
+                    var post = await repository.SaveAsync(model);
+
+                    return StatusCode(HttpStatusCode.Accepted, post);
+                }
+                else
+                {
+                    return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
+                }
+
             }
-            else
+            catch(InvalidRequestException ex)
             {
-                return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
+                return StatusCode(HttpStatusCode.BadRequest, ex.Message);
             }
+            catch (RecordNotFoundException ex)
+            {
+                return StatusCode(HttpStatusCode.NotFound, ex.Message);
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(HttpStatusCode.InternalServerError, ex.Message);
+            }
+         
         }
 
         private readonly IPostRepository repository;
