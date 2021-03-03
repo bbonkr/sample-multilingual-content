@@ -128,7 +128,33 @@ namespace Sample.MultilingualContent.Controllers
 
                 return StatusCode(HttpStatusCode.InternalServerError, ex.Message);
             }
-         
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        [ProducesResponseType(typeof(ApiResponseModel<PostDetailModel>), (int)HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
+        public async Task<IActionResult> DeleteAsync(string id)
+        {
+            try
+            {
+                await repository.DeleteAsync(id);
+
+                return StatusCode(HttpStatusCode.Accepted, $"The post Deleted. ({id})");
+            }
+            catch (InvalidRequestException ex)
+            {
+                return StatusCode(HttpStatusCode.BadRequest, ex.Message);
+            }
+            catch (RecordNotFoundException ex)
+            {
+                return StatusCode(HttpStatusCode.NotFound, ex.Message);
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
 
         private readonly IPostRepository repository;

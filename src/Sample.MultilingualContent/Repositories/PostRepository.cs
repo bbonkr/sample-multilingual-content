@@ -21,7 +21,7 @@ namespace Sample.MultilingualContent.Repositories
 
         Task<PostDetailModel> SaveAsync( PostSaveRequestModel model);
 
-        Task DeleteAsync(PostSaveRequestModel model);
+        Task DeleteAsync(string id);
     }
 
     public class PostRepository : IPostRepository
@@ -102,6 +102,11 @@ namespace Sample.MultilingualContent.Repositories
                 .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
                 .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
                 .Where(post => !post.IsDeleted && post.Id == model.Id).FirstOrDefault();
+
+            if(!String.IsNullOrWhiteSpace( model.Id) && post == null)
+            {
+                throw new RecordNotFoundException($"Could not find a post ({model.Id})");
+            }
 
             var languages = dbContext.Languages.ToList();
 
@@ -246,18 +251,16 @@ namespace Sample.MultilingualContent.Repositories
             return postModel;
         }
 
-        public async Task DeleteAsync(PostSaveRequestModel model)
+        public async Task DeleteAsync(string id)
         {
-            var postId = model.Id;
-
             var post = dbContext.Posts
               .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
               .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
-              .Where(post => !post.IsDeleted && post.Id == postId).FirstOrDefault();
+              .Where(post => !post.IsDeleted && post.Id == id).FirstOrDefault();
 
             if (post == null)
             {
-                throw new Exception($"Could not find a post ({postId})");
+                throw new RecordNotFoundException($"Could not find a post ({id})");
             }
 
             post.IsDeleted = true;
