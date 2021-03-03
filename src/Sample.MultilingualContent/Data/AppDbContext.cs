@@ -28,7 +28,8 @@ namespace Sample.MultilingualContent.Data
 
             modelBuilder.Entity<Language>().HasKey(x => x.Id);
             modelBuilder.Entity<Language>().Property(x => x.Id).ValueGeneratedOnAdd();
-            //modelBuilder.Entity<Language>().Property(x => x.Code).IsRequired()
+            modelBuilder.Entity<Language>().Property(x => x.Code).HasMaxLength(40).IsRequired();
+            modelBuilder.Entity<Language>().HasIndex(x => x.Code).IsUnique();
 
             modelBuilder.Entity<Post>().Property(x => x.Id).ValueGeneratedOnAdd();
             modelBuilder.Entity<Post>()
@@ -41,7 +42,6 @@ namespace Sample.MultilingualContent.Data
                 .WithOne()
                 .HasForeignKey<Post>(x => x.ContentId)
                 ;
-
 
             modelBuilder.Entity<LocalizationSet>().HasKey(x => x.Id);
             modelBuilder.Entity<LocalizationSet>().Property(x => x.Id).ValueGeneratedOnAdd();

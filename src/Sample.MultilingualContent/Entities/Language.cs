@@ -8,6 +8,13 @@ namespace Sample.MultilingualContent.Entities
     {
         /// <summary>
         /// Lanaguage code
+        /// <para>
+        /// Constraints
+        /// <list type="bullet">
+        /// <item>Index</item>
+        /// <item>Unique</item>
+        /// </list>
+        /// </para>
         /// </summary>
         public string Code { get; set; }
 

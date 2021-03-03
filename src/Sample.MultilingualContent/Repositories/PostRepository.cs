@@ -37,7 +37,10 @@ namespace Sample.MultilingualContent.Repositories
 
         public async Task<IEnumerable<PostModel>> GetAllAsync(string languageCode, int page = 1, int take = 10)
         {
-            var language = dbContext.Languages.Where(language => language.Code == languageCode).FirstOrDefault();
+            var language = dbContext.Languages
+                .Where(language => !language.IsDeleted && language.Code == languageCode)
+                .AsNoTracking()
+                .FirstOrDefault();
 
             if (language == null)
             {
@@ -62,14 +65,14 @@ namespace Sample.MultilingualContent.Repositories
 
         public async Task<PostDetailModel> GetPost(string id, string languageCode = EMPTY_STRING)
         {
-            var languageQuery = dbContext.Languages.AsNoTracking();
+            var languageQuery = dbContext.Languages.Where(language => !language.IsDeleted);
 
             if (!string.IsNullOrWhiteSpace(languageCode))
             {
                 languageQuery = languageQuery.Where(lang => lang.Code == languageCode);
             }
 
-            var languages = languageQuery.ToList();
+            var languages = languageQuery.AsNoTracking().ToList();
 
             var query = dbContext.Posts
                 .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
@@ -108,7 +111,7 @@ namespace Sample.MultilingualContent.Repositories
                 throw new RecordNotFoundException($"Could not find a post ({model.Id})");
             }
 
-            var languages = dbContext.Languages.ToList();
+            var languages = dbContext.Languages.Where(language => !language.IsDeleted).AsNoTracking().ToList();
 
             var titleSet = model.PostContents.Select(postContent => new Localization
             {
