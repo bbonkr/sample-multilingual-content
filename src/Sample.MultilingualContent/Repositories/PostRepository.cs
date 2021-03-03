@@ -19,6 +19,17 @@ namespace Sample.MultilingualContent.Repositories
 
         Task<PostDetailModel> GetPost(string id, string languageCode);
 
+        /// <summary>
+        /// Save request data.
+        /// <para>
+        /// If use translation, ignore title and content in request body that excludes criteria language. 
+        /// </para>
+        /// <para>
+        /// 번역을 사용하는 경우, 기준 언어를 제외한 요청 본문의 제목 및 내용을 무시합니다.
+        /// </para>
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         Task<PostDetailModel> SaveAsync( PostSaveRequestModel model);
 
         Task DeleteAsync(string id);
@@ -52,7 +63,7 @@ namespace Sample.MultilingualContent.Repositories
                         join content in dbContext.Localizations on post.ContentId equals content.Id
                         where !post.IsDeleted && title.LanguageId == language.Id && content.LanguageId == language.Id
                         orderby post.CreatedAt descending
-                        select new PostModel(post.Id, title.Value, content.Value)
+                        select new PostModel(post.Id, title.Value, content.Value, language.Code)
                         ;
 
             var skip = (page - 1) * take;
@@ -83,12 +94,14 @@ namespace Sample.MultilingualContent.Repositories
 
 
             var postEntry = await query.FirstOrDefaultAsync();
+
             if (postEntry != null)
             {
-                var contents = languages.Select(lang => new PostSaveModel(
-                      postEntry.Title.Contents.Where(x => lang.Id == x.LanguageId).FirstOrDefault().Value,
-                      postEntry.Content.Contents.Where(x => lang.Id == x.LanguageId).FirstOrDefault().Value, 
-                      lang.Code));
+                var contents = languages.Select(lang => new PostModel(
+                    postEntry.Id,
+                    postEntry.Title.Contents.Where(x => lang.Id == x.LanguageId).FirstOrDefault().Value,
+                    postEntry.Content.Contents.Where(x => lang.Id == x.LanguageId).FirstOrDefault().Value,
+                    lang.Code));
 
 
                 return new PostDetailModel(postEntry.Id, contents);
@@ -97,6 +110,7 @@ namespace Sample.MultilingualContent.Repositories
             return null;
         }
 
+        /// <inheritdoc />
         public async Task<PostDetailModel> SaveAsync(PostSaveRequestModel model)
         {
             var postId = model.Id;

@@ -5,14 +5,11 @@ using System.Threading.Tasks;
 
 namespace Sample.MultilingualContent.Models
 {
-    public record PostModel(string Id, string Title, string Content);
+    public record PostModel(string Id, string Title, string Content, string LanguageCode);
 
-    public record PostDetailModel(string Id, IEnumerable< PostSaveModel> Contetents);
+    public record PostDetailModel(string Id, IEnumerable<PostModel> Contetents);
 
-    public record PostSaveModel(string Title, string Content, string LanguageCode);
+    public record PostSaveResultModel(string Id, IEnumerable<PostModel> Contents);
 
-    public record PostSaveResultModel(string Id, IEnumerable<PostSaveModel> Contents);
-
-    public record PostSaveRequestModel(string Id, string CriteriaLanguageCode, IEnumerable<PostSaveModel> PostContents, bool UseTranslation);
-    
+    public record PostSaveRequestModel(string Id, string CriteriaLanguageCode, IEnumerable<PostModel> PostContents, bool UseTranslation);
 }
