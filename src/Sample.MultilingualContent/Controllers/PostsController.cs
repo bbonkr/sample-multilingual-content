@@ -26,23 +26,33 @@ namespace Sample.MultilingualContent.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponseModel<IEnumerable<PostModel>>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> GetAllAsync(string language = "", int page = 1, int take = 10)
         {
-            var posts = await repository.GetAllAsync(language, page, take);
+            try
+            {
+                var posts = await repository.GetAllAsync(language, page, take);
 
-            logger.LogInformation($"{nameof(PostsController)}.{nameof(GetAllAsync)} posts.count={posts.Count():n0}");
+                logger.LogInformation($"{nameof(PostsController)}.{nameof(GetAllAsync)} posts.count={posts.Count():n0}");
 
-            return StatusCode((int)HttpStatusCode.OK, posts);
+                return StatusCode((int)HttpStatusCode.OK, posts);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
 
         [HttpGet]
         [Route("{id}")]
-        [ProducesResponseType(typeof(ApiResponseModel<IEnumerable<PostModel>>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponseModel<PostModel>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> GetPost(string id, string language = "")
         {
             try
             {
-                var post = await repository.GetPost(id, language);
+                var post = await repository.GetPostAsync(id, language);
                 logger.LogInformation($"{nameof(PostsController)}.{nameof(GetPost)} post.found={post != null}");
                 if (post == null)
                 {
@@ -65,6 +75,7 @@ namespace Sample.MultilingualContent.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponseModel<PostDetailModel>), (int)HttpStatusCode.Created)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> InsertAsync(PostSaveRequestModel model)
         {
             try
@@ -80,10 +91,6 @@ namespace Sample.MultilingualContent.Controllers
                     return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
                 }
             }
-            catch (RecordNotFoundException ex)
-            {
-                return StatusCode(HttpStatusCode.NotFound, ex.Message);
-            }
             catch (Exception ex)
             {
                 return StatusCode(HttpStatusCode.InternalServerError, ex.Message);
@@ -94,6 +101,8 @@ namespace Sample.MultilingualContent.Controllers
         [Route("{id}")]
         [ProducesResponseType(typeof(ApiResponseModel<PostDetailModel>), (int)HttpStatusCode.Accepted)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> UpdateAsync(string id, PostSaveRequestModel model)
         {
             try
@@ -132,8 +141,10 @@ namespace Sample.MultilingualContent.Controllers
 
         [HttpDelete]
         [Route("{id}")]
-        [ProducesResponseType(typeof(ApiResponseModel<PostDetailModel>), (int)HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> DeleteAsync(string id)
         {
             try

@@ -17,7 +17,7 @@ namespace Sample.MultilingualContent.Repositories
     {
         Task<IEnumerable<PostModel>> GetAllAsync(string languageCode, int page, int take);
 
-        Task<PostDetailModel> GetPost(string id, string languageCode);
+        Task<PostDetailModel> GetPostAsync(string id, string languageCode);
 
         /// <summary>
         /// Save request data.
@@ -74,7 +74,7 @@ namespace Sample.MultilingualContent.Repositories
             return result;
         }
 
-        public async Task<PostDetailModel> GetPost(string id, string languageCode = EMPTY_STRING)
+        public async Task<PostDetailModel> GetPostAsync(string id, string languageCode = EMPTY_STRING)
         {
             var languageQuery = dbContext.Languages.Where(language => !language.IsDeleted);
 
@@ -263,7 +263,7 @@ namespace Sample.MultilingualContent.Repositories
 
             await dbContext.SaveChangesAsync();
 
-            var postModel = await GetPost(postId);
+            var postModel = await GetPostAsync(postId);
 
             return postModel;
         }
