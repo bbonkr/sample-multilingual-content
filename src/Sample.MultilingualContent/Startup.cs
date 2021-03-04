@@ -45,6 +45,7 @@ namespace Sample.MultilingualContent
 
             services.AddTransient<ILanguageRepository, LanguageRepository>();
             services.AddTransient<IPostRepository, PostRepository>();
+            services.AddTransient<IBookRepository, BookRepository>();
             services.AddTransient<ITranslatorService, TranslatorService>();
 
             services.AddControllers();
