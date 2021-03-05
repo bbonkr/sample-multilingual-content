@@ -75,6 +75,7 @@ namespace Sample.MultilingualContent.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponseModel<BookModel>), (int)HttpStatusCode.Created)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Forbidden)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> InsertAsync(BookSaveRequestModel model)
         {
@@ -91,6 +92,11 @@ namespace Sample.MultilingualContent.Controllers
                     return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
                 }
             }
+            catch (SomethingWrongException ex)
+            {
+                var exceptionDetails = ex.GetDetails();
+                return StatusCode(HttpStatusCode.Forbidden, ex.Message, exceptionDetails);
+            }
             catch (Exception ex)
             {
                 return StatusCode(HttpStatusCode.InternalServerError, ex.Message);
@@ -102,6 +108,7 @@ namespace Sample.MultilingualContent.Controllers
         [ProducesResponseType(typeof(ApiResponseModel<BookModel>), (int)HttpStatusCode.Accepted)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Forbidden)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> UpdateAsync(string id, BookSaveRequestModel model)
         {
@@ -109,7 +116,7 @@ namespace Sample.MultilingualContent.Controllers
             {
                 if (!id.Equals(model.Id, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new InvalidRequestException($"Request body is invalid.");
+                    throw new InvalidRequestException<IEnumerable<string>>($"Request body is invalid.", new[] { "Book identifier does not match." });
                 }
 
                 if (ModelState.IsValid)
@@ -126,11 +133,16 @@ namespace Sample.MultilingualContent.Controllers
             }
             catch (InvalidRequestException ex)
             {
-                return StatusCode(HttpStatusCode.BadRequest, ex.Message);
+                return StatusCode(HttpStatusCode.BadRequest, ex.Message, ex.GetDetails());
             }
             catch (RecordNotFoundException ex)
             {
                 return StatusCode(HttpStatusCode.NotFound, ex.Message);
+            }
+            catch (SomethingWrongException ex)
+            {
+                var exceptionDetails = ex.GetDetails();
+                return StatusCode(HttpStatusCode.Forbidden, ex.Message, exceptionDetails);
             }
             catch (Exception ex)
             {
@@ -155,7 +167,7 @@ namespace Sample.MultilingualContent.Controllers
             }
             catch (InvalidRequestException ex)
             {
-                return StatusCode(HttpStatusCode.BadRequest, ex.Message);
+                return StatusCode(HttpStatusCode.BadRequest, ex.Message, ex.GetDetails());
             }
             catch (RecordNotFoundException ex)
             {

@@ -156,7 +156,9 @@ namespace Sample.MultilingualContent.Repositories
                                     new TranslationRequestInputModel(criteriaContent.Title),
                                     new TranslationRequestInputModel(criteriaContent.Content)
                                 },
-                            TranslateToLanguages = targetLanguages.Select(x => x.Code).ToArray(),
+                            ToLanguages = targetLanguages.Select(x => x.Code).ToArray(),
+                            FromLanguage = model.CriteriaLanguageCode,
+                            TextType = model.IsHtmlContent ? TextTypes.Html : TextTypes.Plain,
                         });
 
                         if (titleTranslationResult.Length > 0)

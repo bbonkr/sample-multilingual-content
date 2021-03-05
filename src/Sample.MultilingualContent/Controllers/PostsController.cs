@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Sample.MultilingualContent.Models;
 using Sample.MultilingualContent.Repositories;
@@ -75,6 +76,7 @@ namespace Sample.MultilingualContent.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponseModel<PostDetailModel>), (int)HttpStatusCode.Created)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Forbidden)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> InsertAsync(PostSaveRequestModel model)
         {
@@ -88,8 +90,21 @@ namespace Sample.MultilingualContent.Controllers
                 }
                 else
                 {
-                    return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
+                    throw new InvalidRequestException<IEnumerable<string>>("Request body is invalid.", ModelState.Values.Select(x => x.AttemptedValue));
                 }
+            }
+            catch(OptionsValidationException ex)
+            {
+                return StatusCode(HttpStatusCode.Forbidden, ex.Message, ex.Failures);               
+            }
+            catch(InvalidRequestException ex)
+            {
+                return StatusCode(HttpStatusCode.Forbidden, ex.Message, ex.GetDetails());
+            }
+            catch(SomethingWrongException ex)
+            {
+                var exceptionDetails = ex.GetDetails();
+                return StatusCode(HttpStatusCode.Forbidden, ex.Message, exceptionDetails);
             }
             catch (Exception ex)
             {
@@ -101,6 +116,7 @@ namespace Sample.MultilingualContent.Controllers
         [Route("{id}")]
         [ProducesResponseType(typeof(ApiResponseModel<PostDetailModel>), (int)HttpStatusCode.Accepted)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Forbidden)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> UpdateAsync(string id, PostSaveRequestModel model)
@@ -109,7 +125,7 @@ namespace Sample.MultilingualContent.Controllers
             {
                 if (!id.Equals(model.Id, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new InvalidRequestException($"Request body is invalid.");
+                    throw new InvalidRequestException<IEnumerable<string>>($"Request body is invalid.", new[] { "Post identifier does not match." });
                 }
 
                 if (ModelState.IsValid)
@@ -120,17 +136,22 @@ namespace Sample.MultilingualContent.Controllers
                 }
                 else
                 {
-                    return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
+                    throw new InvalidRequestException<IEnumerable<string>>("Request body is invalid.", ModelState.Values.Select(x => x.AttemptedValue));
                 }
 
             }
             catch(InvalidRequestException ex)
             {
-                return StatusCode(HttpStatusCode.BadRequest, ex.Message);
+                return StatusCode(HttpStatusCode.BadRequest, ex.Message, ex.GetDetails());
             }
             catch (RecordNotFoundException ex)
             {
                 return StatusCode(HttpStatusCode.NotFound, ex.Message);
+            }
+            catch (SomethingWrongException ex)
+            {
+                var exceptionDetails = ex.GetDetails();
+                return StatusCode(HttpStatusCode.Forbidden, ex.Message, exceptionDetails);
             }
             catch (Exception ex)
             {
@@ -155,7 +176,7 @@ namespace Sample.MultilingualContent.Controllers
             }
             catch (InvalidRequestException ex)
             {
-                return StatusCode(HttpStatusCode.BadRequest, ex.Message);
+                return StatusCode(HttpStatusCode.BadRequest, ex.Message, ex.GetDetails());
             }
             catch (RecordNotFoundException ex)
             {
