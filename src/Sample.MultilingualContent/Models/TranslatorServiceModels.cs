@@ -146,17 +146,5 @@ namespace Sample.MultilingualContent.Models
     {
         public const string Asterisk = "Asterisk";
         public const string Tag = "Tag";
-    }
-
-    public class TranslationErrorResultModel
-    {
-        public ErrorModel Error { get; init; }
-    }
-
-    public class ErrorModel
-    {
-        public int Code { get; init; }
-
-        public string Message { get; init; }
-    }
+    }  
 }
