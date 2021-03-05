@@ -22,6 +22,8 @@ namespace Sample.MultilingualContent.Data
 
         public DbSet<Localization> Localizations { get; set; }
 
+        public DbSet<Book> Books { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -56,6 +58,13 @@ namespace Sample.MultilingualContent.Data
             modelBuilder.Entity<Localization>().Property(x => x.LanguageId).IsRequired();
             modelBuilder.Entity<Localization>().HasOne(x => x.LocalizationSet).WithMany(x => x.Contents).HasForeignKey(x => x.Id);
             modelBuilder.Entity<Localization>().HasOne(x => x.Language).WithMany(x => x.Localizations).HasForeignKey(x => x.LanguageId);
+
+            modelBuilder.Entity<Book>().HasKey(x => x.Id);
+            modelBuilder.Entity<Book>().Property(x => x.Id).ValueGeneratedOnAdd();
+
+            modelBuilder.Entity<BookLocalization>().HasKey(x => new { x.Id, x.LanguageId });
+            modelBuilder.Entity<BookLocalization>().HasOne(x => x.Book).WithMany(x => x.Localizations).HasForeignKey(x => x.Id);
+            modelBuilder.Entity<BookLocalization>().HasOne(x => x.Language).WithMany().HasForeignKey(x => x.LanguageId);
         }
     }
 }

@@ -10,10 +10,4 @@ namespace Sample.MultilingualContent
         public RecordNotFoundException() : base() { }
         public RecordNotFoundException(string message) : base(message) { }
     }
-
-    public class InvalidRequestException: Exception
-    {
-        public InvalidRequestException() : base() { }
-        public InvalidRequestException(string message) : base(message) { }
-    }
 }

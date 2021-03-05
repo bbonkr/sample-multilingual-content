@@ -16,11 +16,13 @@ namespace Sample.MultilingualContent.Services
 
     public interface ITranslatorService
     {
-        Task<TranslationResultModel[]> TranslateAsync(TranslationRequestModel model);
+        Task<IEnumerable<TranslationResultModel>> TranslateAsync(TranslationRequestModel model);
     }
 
     public class TranslatorService : ITranslatorService
     {
+        private const string TAG = "[Azure Translator Service]";
+
         public const string TRANSLATOR_ROUTE = "/translate?api-version=3.0";
         public const string OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
         public const string OCP_APIM_SUBSCRIPTION_REGION = "Ocp-Apim-Subscription-Region";
@@ -34,38 +36,102 @@ namespace Sample.MultilingualContent.Services
             logger = loggerFactory.CreateLogger<TranslatorService>();
         }
 
-        public async Task<TranslationResultModel[]> TranslateAsync(TranslationRequestModel model)
+        public async Task<IEnumerable<TranslationResultModel>> TranslateAsync(TranslationRequestModel model)
         {
             ValidateAzureTranslateConnectionOptions();
+            ValidateRequestbody(model, true);
+
+            List<TranslationResultModel> resultSet = null;
 
             var requestBody = model.Inputs.ToJson();
 
             using (var client = new HttpClient())
             {
-                using (var request = new HttpRequestMessage())
+                foreach(var uri in getRequestUri(model))
                 {
-                    request.Method = HttpMethod.Post;
-                    request.RequestUri = getRequestUri(model.TranslateToLanguages);
-                    request.Content = new StringContent(requestBody, Encoding.UTF8, CONTENT_TYPE_VALUE);
-                    request.Headers.Add(OCP_APIM_SUBSCRIPTION_KEY, azureTranslatorConnectionOptions.SubscriptionKey);
-                    request.Headers.Add(OCP_APIM_SUBSCRIPTION_REGION, azureTranslatorConnectionOptions.Region);
-                    //request.Headers.Add(CONTENT_TYPE_KEY, CONTENT_TYPE_VALUE);
-
-                    var response = await client.SendAsync(request);//.ConfigureAwait(false);
-
-                    var result = await response.Content.ReadAsStringAsync();
-
-                    var resultModel = JsonSerializer.Deserialize<TranslationResultModel[]>(result, new JsonSerializerOptions
+                    using (var request = new HttpRequestMessage())
                     {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    });
+                        request.Method = HttpMethod.Post;
+                        request.RequestUri = uri;
 
-                    return resultModel;
+                        request.Headers.Add(OCP_APIM_SUBSCRIPTION_KEY, azureTranslatorConnectionOptions.SubscriptionKey);
+                        request.Headers.Add(OCP_APIM_SUBSCRIPTION_REGION, azureTranslatorConnectionOptions.Region);
+
+                        request.Content = new StringContent(requestBody, Encoding.UTF8, CONTENT_TYPE_VALUE);
+
+                        var response = await client.SendAsync(request);
+
+                        if (response.Content == null)
+                        {
+                            throw new Exception($"{TAG} Response content is empty.");
+                        }
+
+                        var resultJson = await response.Content.ReadAsStringAsync();
+
+                        var jsonSerializerOptions = new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        };
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var resultModel = JsonSerializer.Deserialize<IEnumerable<TranslationResultModel>>(resultJson, jsonSerializerOptions);
+
+                            logger.LogInformation($"${TAG} The request has been processed. => Translated.");
+
+                            if (resultSet == null)
+                            {
+                                resultSet = new List<TranslationResultModel>(resultModel);
+                            }
+                            else
+                            {
+                                var resultModelIndex = 0;
+                                resultModel.ToList().ForEach((result) =>
+                                {
+                                    var list = resultSet[resultModelIndex].Translations.ToList();
+                                    result.Translations.ToList().ForEach((translation) =>
+                                        {
+
+                                            list.Add(translation);
+
+                                        });
+
+                                    resultSet[resultModelIndex].Translations = list;
+                                    resultModelIndex++;
+                                });
+                            }
+                        }
+                        else
+                        {
+                            var resultModel = JsonSerializer.Deserialize<TranslationErrorResultModel>(resultJson, jsonSerializerOptions);
+
+                            logger.LogInformation($"${TAG} The request does not has been processed. => Not  Translated.");
+
+                            throw new SomethingWrongException<TranslationErrorResultModel>(resultModel.Error.Message, resultModel);
+                        }
+                    }
+                }                
+            }
+
+            return resultSet;
+        }
+
+        private IEnumerable<Uri> getRequestUri(TranslationRequestModel model)
+        {
+            if (model.IsTranslationEachLanguage)
+            {
+                foreach(var language in model.ToLanguages)
+                {
+                    yield return getRequestUri(model, language);
                 }
+            }
+            else
+            {
+                yield return getRequestUri(model, string.Empty);
             }
         }
 
-        private Uri getRequestUri(string[] translateToLanguages)
+        private Uri getRequestUri(TranslationRequestModel model, string languageCode = "")
         {
             var endpoint = azureTranslatorConnectionOptions.Endpoint;
             if (endpoint.EndsWith("/"))
@@ -73,9 +139,45 @@ namespace Sample.MultilingualContent.Services
                 endpoint = endpoint.Substring(0, endpoint.Length - 1);
             }
 
-            var requestUri = new Uri($"{endpoint}{TRANSLATOR_ROUTE}&to={String.Join("&to=", translateToLanguages)}");
+            var url = $"{endpoint}{TRANSLATOR_ROUTE}";
 
-            logger.LogInformation($"Request uri: {requestUri.ToString()}");
+            if (string.IsNullOrWhiteSpace(languageCode))
+            {
+                url = $"{url}&to={String.Join("&to=", model.ToLanguages)}";
+            }
+            else
+            {
+                url = $"{url}&to={languageCode}";
+            }
+
+            if (!String.IsNullOrWhiteSpace(model.FromLanguage))
+            {
+                url = $"{url}&from={model.FromLanguage}";
+            }
+
+            if (!String.IsNullOrWhiteSpace(model.TextType) && !model.TextType.Equals(TextTypes.Plain, StringComparison.OrdinalIgnoreCase))
+            {
+                url = $"{url}&textType={model.TextType}";
+            }
+
+            if (!String.IsNullOrWhiteSpace(model.Category) && !model.Category.Equals(Categories.General, StringComparison.OrdinalIgnoreCase))
+            {
+                url = $"{url}&category={model.Category}";
+            }
+
+            if (!String.IsNullOrWhiteSpace(model.ProfanityAction) && !model.ProfanityAction.Equals(ProfanityActions.NoAction, StringComparison.OrdinalIgnoreCase))
+            {
+                url = $"{url}&profanityAction={model.ProfanityAction}";
+
+                if (!String.IsNullOrWhiteSpace(model.ProfanityMarker) && !model.ProfanityMarker.Equals(ProfanityMarkers.Asterisk, StringComparison.OrdinalIgnoreCase))
+                {
+                    url = $"{url}&profanityMarker={model.ProfanityMarker}";
+                }
+            }
+
+            var requestUri = new Uri(url);
+
+            //logger.LogInformation($"{TAG} Request uri: {requestUri.ToString()}");
 
             return requestUri;
         }
@@ -101,9 +203,50 @@ namespace Sample.MultilingualContent.Services
 
             if (errorMessage.Count > 0)
             {
+                logger.LogInformation($"{TAG} {nameof(AzureTranslatorConnectionOptions)} is invalid.");
                 throw new OptionsValidationException(AzureTranslatorConnectionOptions.Name, typeof(AzureTranslatorConnectionOptions), errorMessage.ToArray());
             }
         }
+
+        private void ValidateRequestbody(TranslationRequestModel model, bool each = false)
+        {
+            var errorMessage = new List<string>();
+
+            var inputsCount = model.Inputs.Count();
+
+            if (inputsCount == 0)
+            {
+                errorMessage.Add("Text to translate is required.");
+            }
+
+            if (inputsCount > 100)
+            {
+                errorMessage.Add("The array can have at most 100 elements.");
+            }
+
+            foreach (var input in model.Inputs)
+            {
+                // https://docs.microsoft.com/en-us/azure/cognitive-services/translator/request-limits#character-and-array-limits-per-request
+                // Max 10,000 characters. 
+                // Request to translate (+1) and Response to be translated ( + count of to translate languages)
+                var contentLength = input.Text.Length * ((each ? 1 : model.ToLanguages.Count()) + 1);
+                
+                logger.LogInformation($"{TAG} Calculated characters={contentLength}");
+
+                if (contentLength > 10000)
+                {
+                    errorMessage.Add("The entire text included in the request cannot exceed 10,000 characters including spaces.");
+                    break;
+                }
+            }
+
+            if (errorMessage.Count > 0)
+            {
+                logger.LogInformation($"{TAG} Request body is invalid.");
+                throw new InvalidRequestException<IEnumerable<string>>("Request body is invalid.", errorMessage.ToArray());
+            }
+        }
+
 
         private readonly AzureTranslatorConnectionOptions azureTranslatorConnectionOptions;
         private readonly ILogger logger;

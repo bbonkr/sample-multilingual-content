@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using Sample.MultilingualContent.Models;
 using Sample.MultilingualContent.Repositories;
@@ -17,26 +16,26 @@ namespace Sample.MultilingualContent.Controllers
     [ApiController]
     [Area("api")]
     [Route("[area]/v{version:apiVersion}/[controller]")]
-    public class PostsController : ApiControllerBase
+    public class BooksController: ApiControllerBase
     {
-        public PostsController(IPostRepository repository, ILoggerFactory loggerFactory)
+        public BooksController(IBookRepository repository, ILoggerFactory loggerFactory)
         {
             this.repository = repository;
-            logger = loggerFactory.CreateLogger<LanguagesController>();
+            logger = loggerFactory.CreateLogger<BooksController>();
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(ApiResponseModel<IEnumerable<PostModel>>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponseModel<IEnumerable<BookModel>>), (int)HttpStatusCode.OK)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> GetAllAsync(string language = "", int page = 1, int take = 10)
         {
             try
             {
-                var posts = await repository.GetAllAsync(language, page, take);
+                var books = await repository.GetAllAsync(language, page, take);
 
-                logger.LogInformation($"{nameof(PostsController)}.{nameof(GetAllAsync)} posts.count={posts.Count():n0}");
+                logger.LogInformation($"{nameof(BooksController)}.{nameof(GetAllAsync)} books.count={books.Count():n0}");
 
-                return StatusCode((int)HttpStatusCode.OK, posts);
+                return StatusCode((int)HttpStatusCode.OK, books);
             }
             catch (Exception ex)
             {
@@ -46,18 +45,18 @@ namespace Sample.MultilingualContent.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        [ProducesResponseType(typeof(ApiResponseModel<PostModel>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponseModel<BookModel>), (int)HttpStatusCode.OK)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
-        public async Task<IActionResult> GetPost(string id, string language = "")
+        public async Task<IActionResult> GetBookAsync(string id, string language = "")
         {
             try
             {
-                var post = await repository.GetPostAsync(id, language);
-                logger.LogInformation($"{nameof(PostsController)}.{nameof(GetPost)} post.found={post != null}");
+                var post = await repository.GetBookAsync(id, language);
+                logger.LogInformation($"{nameof(BooksController)}.{nameof(GetBookAsync)} book.found={post != null}");
                 if (post == null)
                 {
-                    throw new RecordNotFoundException($"Could not find a post ({id})");
+                    throw new RecordNotFoundException($"Could not find a book ({id})");
                 }
 
                 return StatusCode((int)HttpStatusCode.OK, post);
@@ -74,34 +73,26 @@ namespace Sample.MultilingualContent.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponseModel<PostDetailModel>), (int)HttpStatusCode.Created)]
+        [ProducesResponseType(typeof(ApiResponseModel<BookModel>), (int)HttpStatusCode.Created)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Forbidden)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
-        public async Task<IActionResult> InsertAsync(PostSaveRequestModel model)
+        public async Task<IActionResult> InsertAsync(BookSaveRequestModel model)
         {
             try
             {
                 if (ModelState.IsValid)
                 {
-                    var post = await repository.SaveAsync(model);
+                    var book = await repository.SaveAsync(model);
 
-                    return StatusCode(HttpStatusCode.Created, post);
+                    return StatusCode(HttpStatusCode.Created, book);
                 }
                 else
                 {
-                    throw new InvalidRequestException<IEnumerable<string>>("Request body is invalid.", ModelState.Values.Select(x => x.AttemptedValue));
+                    return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
                 }
             }
-            catch(OptionsValidationException ex)
-            {
-                return StatusCode(HttpStatusCode.Forbidden, ex.Message, ex.Failures);               
-            }
-            catch(InvalidRequestException ex)
-            {
-                return StatusCode(HttpStatusCode.Forbidden, ex.Message, ex.GetDetails());
-            }
-            catch(SomethingWrongException ex)
+            catch (SomethingWrongException ex)
             {
                 var exceptionDetails = ex.GetDetails();
                 return StatusCode(HttpStatusCode.Forbidden, ex.Message, exceptionDetails);
@@ -114,33 +105,33 @@ namespace Sample.MultilingualContent.Controllers
 
         [HttpPatch]
         [Route("{id}")]
-        [ProducesResponseType(typeof(ApiResponseModel<PostDetailModel>), (int)HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(ApiResponseModel<BookModel>), (int)HttpStatusCode.Accepted)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Forbidden)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Forbidden)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
-        public async Task<IActionResult> UpdateAsync(string id, PostSaveRequestModel model)
+        public async Task<IActionResult> UpdateAsync(string id, BookSaveRequestModel model)
         {
             try
             {
                 if (!id.Equals(model.Id, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new InvalidRequestException<IEnumerable<string>>($"Request body is invalid.", new[] { "Post identifier does not match." });
+                    throw new InvalidRequestException<IEnumerable<string>>($"Request body is invalid.", new[] { "Book identifier does not match." });
                 }
 
                 if (ModelState.IsValid)
                 {
-                    var post = await repository.SaveAsync(model);
+                    var book = await repository.SaveAsync(model);
 
-                    return StatusCode(HttpStatusCode.Accepted, post);
+                    return StatusCode(HttpStatusCode.Accepted, book);
                 }
                 else
                 {
-                    throw new InvalidRequestException<IEnumerable<string>>("Request body is invalid.", ModelState.Values.Select(x => x.AttemptedValue));
+                    return StatusCode(HttpStatusCode.BadRequest, String.Join(", ", ModelState.Values.Select(x => x.AttemptedValue)));
                 }
 
             }
-            catch(InvalidRequestException ex)
+            catch (InvalidRequestException ex)
             {
                 return StatusCode(HttpStatusCode.BadRequest, ex.Message, ex.GetDetails());
             }
@@ -163,8 +154,8 @@ namespace Sample.MultilingualContent.Controllers
         [HttpDelete]
         [Route("{id}")]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.Accepted)]
-        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.NotFound)]
         [ProducesResponseType(typeof(ApiResponseModel), (int)HttpStatusCode.InternalServerError)]
         public async Task<IActionResult> DeleteAsync(string id)
         {
@@ -172,7 +163,7 @@ namespace Sample.MultilingualContent.Controllers
             {
                 await repository.DeleteAsync(id);
 
-                return StatusCode(HttpStatusCode.Accepted, $"The post Deleted. ({id})");
+                return StatusCode(HttpStatusCode.Accepted, $"The book Deleted. ({id})");
             }
             catch (InvalidRequestException ex)
             {
@@ -189,7 +180,7 @@ namespace Sample.MultilingualContent.Controllers
             }
         }
 
-        private readonly IPostRepository repository;
+        private readonly IBookRepository repository;
         private readonly ILogger logger;
     }
 }
