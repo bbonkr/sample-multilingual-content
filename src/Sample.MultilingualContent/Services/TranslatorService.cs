@@ -39,7 +39,7 @@ namespace Sample.MultilingualContent.Services
         public async Task<IEnumerable<TranslationResultModel>> TranslateAsync(TranslationRequestModel model)
         {
             ValidateAzureTranslateConnectionOptions();
-            ValidateRequestbody(model, true);
+            ValidateRequestbody(model);
 
             List<TranslationResultModel> resultSet = null;
 
@@ -208,7 +208,7 @@ namespace Sample.MultilingualContent.Services
             }
         }
 
-        private void ValidateRequestbody(TranslationRequestModel model, bool each = false)
+        private void ValidateRequestbody(TranslationRequestModel model)
         {
             var errorMessage = new List<string>();
 
@@ -229,7 +229,7 @@ namespace Sample.MultilingualContent.Services
                 // https://docs.microsoft.com/en-us/azure/cognitive-services/translator/request-limits#character-and-array-limits-per-request
                 // Max 10,000 characters. 
                 // Request to translate (+1) and Response to be translated ( + count of to translate languages)
-                var contentLength = input.Text.Length * ((each ? 1 : model.ToLanguages.Count()) + 1);
+                var contentLength = input.Text.Length * ((model.IsTranslationEachLanguage ? 1 : model.ToLanguages.Count()) + 1);
                 
                 logger.LogInformation($"{TAG} Calculated characters={contentLength}");
 
