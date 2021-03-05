@@ -72,6 +72,12 @@ namespace Sample.MultilingualContent.Models
         /// <see cref="ProfanityMarkers"/>
         /// </summary>
         public string ProfanityMarker { get; init; } = ProfanityMarkers.Asterisk;
+
+        /// <summary>
+        /// If true, request translate each language, otherwise request at one time.
+        /// <para>각 언어별 변역 요청 여부를 나타냅니다.</para>
+        /// </summary>
+        public bool IsTranslationEachLanguage { get; init; } = false;
     }
 
     public class TranslationResultModel
@@ -79,7 +85,7 @@ namespace Sample.MultilingualContent.Models
         public DetectedLanguage DetectedLanguage { get; set; }
         public TextResult SourceText { get; set; }
 
-        public Translation[] Translations { get; set; }
+        public IEnumerable<Translation> Translations { get; set; }
     }
 
     public class DetectedLanguage
@@ -113,9 +119,9 @@ namespace Sample.MultilingualContent.Models
 
     public class SentenceLength
     {
-        public int[] SrcSentLen { get; set; }
+        public IEnumerable< int > SrcSentLen { get; set; }
 
-        public int[] TransSentLen { get; set; }
+        public IEnumerable<int> TransSentLen { get; set; }
     }
 
     public class TextTypes

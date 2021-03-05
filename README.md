@@ -256,6 +256,8 @@ Schema:
     }
   ],
   useTranslation: boolean
+  isHtmlContent: boolean
+  isTranslationEachLanguage: boolean
 }
 ```
 
@@ -271,7 +273,9 @@ e.g.)
       "languageCode": "ko"
     }
   ],
-  "useTranslation": true
+  "useTranslation": true,
+  "isHtmlContent": false,
+  "isTranslationEachLanguage": false
 }
 ```
 
@@ -348,6 +352,8 @@ Schema:
     }
   ],
   useTranslation: boolean
+  isHtmlContent: boolean
+  isTranslationEachLanguage: boolean  
 }
 ```
 
@@ -364,7 +370,9 @@ e.g.)
       "languageCode": "ko"
     }
   ],
-  "useTranslation": true
+  "useTranslation": true,
+  "isHtmlContent": false,
+  "isTranslationEachLanguage": false
 }
 ```
 

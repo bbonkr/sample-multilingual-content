@@ -100,7 +100,7 @@ namespace Sample.MultilingualContent.Repositories
 
                     if (criteriaLanguage != null)
                     {
-                        var titleTranslationResult = await translatorService.TranslateAsync(new TranslationRequestModel
+                        var translationResult = await translatorService.TranslateAsync(new TranslationRequestModel
                         {
                             Inputs = new[] {
                                     new TranslationRequestInputModel(criteriaContent.Title),
@@ -109,59 +109,68 @@ namespace Sample.MultilingualContent.Repositories
                             ToLanguages = targetLanguages.Select(x => x.Code).ToArray(),
                             FromLanguage = model.CriteriaLanguageCode,
                             TextType = model.IsHtmlContent ? TextTypes.Html : TextTypes.Plain,
+                            IsTranslationEachLanguage = model.IsTranslationEachLanguage,
                         });
 
-                        if (titleTranslationResult.Length > 0)
-                        {
-                            // Title
-                            foreach (var t in titleTranslationResult[0].Translations)
-                            {
-                                // Translated language
-                                var language = languages.Where(x => x.Code.Equals(t.To, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-                                if (language != null)
-                                {
-                                    var bookDetail = bookDetails.Where(x => x.LanguageId == language.Id).FirstOrDefault();
-                                    if (bookDetail == null)
-                                    {
-                                        bookDetails.Add(new BookLocalization
-                                        {
-                                            LanguageId = language.Id,
-                                            Title = t.Text,
-                                        });
-                                    }
-                                    else
-                                    {
-                                        bookDetail.Title = t.Text;
-                                    }
-                                }
-                            }
-                        }
+                        var translationResultIndex = 0;
 
-                        if (titleTranslationResult.Length > 1)
+                        translationResult.ToList().ForEach(result =>
                         {
-                            // Author
-                            foreach (var t in titleTranslationResult[1].Translations)
+
+                            if (translationResultIndex == 0)
                             {
-                                // Translated language
-                                var language = languages.Where(x => x.Code.Equals(t.To, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-                                if (language != null)
+                                // Title
+                                foreach (var t in result.Translations)
                                 {
-                                    var bookDetail = bookDetails.Where(x => x.LanguageId == language.Id).FirstOrDefault();
-                                    if (bookDetail == null)
+                                    // Translated language
+                                    var language = languages.Where(x => x.Code.Equals(t.To, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                                    if (language != null)
                                     {
-                                        bookDetails.Add(new BookLocalization
+                                        var bookDetail = bookDetails.Where(x => x.LanguageId == language.Id).FirstOrDefault();
+                                        if (bookDetail == null)
                                         {
-                                            LanguageId = language.Id,
-                                            Author = t.Text,
-                                        });
-                                    }
-                                    else
-                                    {
-                                        bookDetail.Author = t.Text;
+                                            bookDetails.Add(new BookLocalization
+                                            {
+                                                LanguageId = language.Id,
+                                                Title = t.Text,
+                                            });
+                                        }
+                                        else
+                                        {
+                                            bookDetail.Title = t.Text;
+                                        }
                                     }
                                 }
                             }
-                        }
+
+                            if (translationResultIndex == 1)
+                            {
+                                // Author
+                                foreach (var t in result.Translations)
+                                {
+                                    // Translated language
+                                    var language = languages.Where(x => x.Code.Equals(t.To, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                                    if (language != null)
+                                    {
+                                        var bookDetail = bookDetails.Where(x => x.LanguageId == language.Id).FirstOrDefault();
+                                        if (bookDetail == null)
+                                        {
+                                            bookDetails.Add(new BookLocalization
+                                            {
+                                                LanguageId = language.Id,
+                                                Author = t.Text,
+                                            });
+                                        }
+                                        else
+                                        {
+                                            bookDetail.Author = t.Text;
+                                        }
+                                    }
+                                }
+                            }
+
+                            translationResultIndex++;
+                        });
                     }
                 }
             }

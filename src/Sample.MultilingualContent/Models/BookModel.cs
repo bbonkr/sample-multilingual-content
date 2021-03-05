@@ -9,5 +9,5 @@ namespace Sample.MultilingualContent.Models
 
     public record BookModel(string Id, IEnumerable<BookDetail> Details);
 
-    public record BookSaveRequestModel(string Id, string CriteriaLanguageCode, IEnumerable<BookDetail> Details, bool UseTranslation, bool IsHtmlContent);
+    public record BookSaveRequestModel(string Id, string CriteriaLanguageCode, IEnumerable<BookDetail> Details, bool UseTranslation, bool IsHtmlContent, bool IsTranslationEachLanguage);
 }

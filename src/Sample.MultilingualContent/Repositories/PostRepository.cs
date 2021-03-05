@@ -150,7 +150,7 @@ namespace Sample.MultilingualContent.Repositories
 
                     if (criteriaLanguage != null)
                     {
-                        var titleTranslationResult = await translatorService.TranslateAsync(new TranslationRequestModel
+                        var translationResult = await translatorService.TranslateAsync(new TranslationRequestModel
                         {
                             Inputs = new[] {
                                     new TranslationRequestInputModel(criteriaContent.Title),
@@ -159,59 +159,69 @@ namespace Sample.MultilingualContent.Repositories
                             ToLanguages = targetLanguages.Select(x => x.Code).ToArray(),
                             FromLanguage = model.CriteriaLanguageCode,
                             TextType = model.IsHtmlContent ? TextTypes.Html : TextTypes.Plain,
+                            IsTranslationEachLanguage = model.IsTranslationEachLanguage,
                         });
 
-                        if (titleTranslationResult.Length > 0)
-                        {
-                            // Title
-                            foreach (var t in titleTranslationResult[0].Translations)
-                            {
-                                // Translated language
-                                var language = languages.Where(x => x.Code.Equals(t.To, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-                                if (language != null)
-                                {
-                                    var title = titleSet.Where(x => x.LanguageId == language.Id).FirstOrDefault();
-                                    if (title == null)
-                                    {
-                                        titleSet.Add(new Localization
-                                        {
-                                            LanguageId = language.Id,
-                                            Value = t.Text,
-                                        });
-                                    }
-                                    else
-                                    {
-                                        title.Value = t.Text;
-                                    }
-                                }
-                            }
-                        }
+                        var translationResultIndex = 0;
 
-                        if (titleTranslationResult.Length > 1)
+                        translationResult.ToList().ForEach(result =>
                         {
-                            // Content
-                            foreach (var t in titleTranslationResult[1].Translations)
+
+                            if (translationResultIndex == 0)
                             {
-                                // Translated language
-                                var language = languages.Where(x => x.Code.Equals(t.To, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-                                if (language != null)
+                                // Title
+                                foreach (var t in result.Translations)
                                 {
-                                    var content = contentSet.Where(x => x.LanguageId == language.Id).FirstOrDefault();
-                                    if (content == null)
+                                    // Translated language
+                                    var language = languages.Where(x => x.Code.Equals(t.To, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                                    if (language != null)
                                     {
-                                        contentSet.Add(new Localization
+                                        var title = titleSet.Where(x => x.LanguageId == language.Id).FirstOrDefault();
+                                        if (title == null)
                                         {
-                                            LanguageId = language.Id,
-                                            Value = t.Text,
-                                        });
+                                            titleSet.Add(new Localization
+                                            {
+                                                LanguageId = language.Id,
+                                                Value = t.Text,
+                                            });
+                                        }
+                                        else
+                                        {
+                                            title.Value = t.Text;
+                                        }
                                     }
-                                    else
+                                }
+
+                            }
+
+                            if (translationResultIndex == 1)
+                            {
+                                // Content
+                                foreach (var t in result.Translations)
+                                {
+                                    // Translated language
+                                    var language = languages.Where(x => x.Code.Equals(t.To, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                                    if (language != null)
                                     {
-                                        content.Value = t.Text;
+                                        var content = contentSet.Where(x => x.LanguageId == language.Id).FirstOrDefault();
+                                        if (content == null)
+                                        {
+                                            contentSet.Add(new Localization
+                                            {
+                                                LanguageId = language.Id,
+                                                Value = t.Text,
+                                            });
+                                        }
+                                        else
+                                        {
+                                            content.Value = t.Text;
+                                        }
                                     }
                                 }
                             }
-                        }
+
+                            translationResultIndex++;
+                        });
                     }
                 }
             }

@@ -9,5 +9,5 @@ namespace Sample.MultilingualContent.Models
 
     public record PostDetailModel(string Id, IEnumerable<PostModel> Contetents);
 
-    public record PostSaveRequestModel(string Id, string CriteriaLanguageCode, IEnumerable<PostModel> PostContents, bool UseTranslation, bool IsHtmlContent);
+    public record PostSaveRequestModel(string Id, string CriteriaLanguageCode, IEnumerable<PostModel> PostContents, bool UseTranslation, bool IsHtmlContent, bool IsTranslationEachLanguage);
 }

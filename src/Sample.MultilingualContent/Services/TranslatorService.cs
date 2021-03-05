@@ -16,7 +16,7 @@ namespace Sample.MultilingualContent.Services
 
     public interface ITranslatorService
     {
-        Task<TranslationResultModel[]> TranslateAsync(TranslationRequestModel model);
+        Task<IEnumerable<TranslationResultModel>> TranslateAsync(TranslationRequestModel model);
     }
 
     public class TranslatorService : ITranslatorService
@@ -36,61 +36,102 @@ namespace Sample.MultilingualContent.Services
             logger = loggerFactory.CreateLogger<TranslatorService>();
         }
 
-        public async Task<TranslationResultModel[]> TranslateAsync(TranslationRequestModel model)
+        public async Task<IEnumerable<TranslationResultModel>> TranslateAsync(TranslationRequestModel model)
         {
             ValidateAzureTranslateConnectionOptions();
-            ValidateRequestbody(model);
+            ValidateRequestbody(model, true);
+
+            List<TranslationResultModel> resultSet = null;
 
             var requestBody = model.Inputs.ToJson();
 
             using (var client = new HttpClient())
             {
-                using (var request = new HttpRequestMessage())
+                foreach(var uri in getRequestUri(model))
                 {
-                    request.Method = HttpMethod.Post;
-                    request.RequestUri = getRequestUri(model);
-
-                    request.Headers.Add(OCP_APIM_SUBSCRIPTION_KEY, azureTranslatorConnectionOptions.SubscriptionKey);
-                    request.Headers.Add(OCP_APIM_SUBSCRIPTION_REGION, azureTranslatorConnectionOptions.Region);
-
-                    request.Content = new StringContent(requestBody, Encoding.UTF8, CONTENT_TYPE_VALUE);
-                    //request.Content.Headers.ContentLength = Encoding.UTF8.GetBytes(requestBody).Length;
-
-                    var response = await client.SendAsync(request);
-
-                    if (response.Content == null)
+                    using (var request = new HttpRequestMessage())
                     {
-                        throw new Exception($"{TAG} Response content is empty.");
+                        request.Method = HttpMethod.Post;
+                        request.RequestUri = uri;
+
+                        request.Headers.Add(OCP_APIM_SUBSCRIPTION_KEY, azureTranslatorConnectionOptions.SubscriptionKey);
+                        request.Headers.Add(OCP_APIM_SUBSCRIPTION_REGION, azureTranslatorConnectionOptions.Region);
+
+                        request.Content = new StringContent(requestBody, Encoding.UTF8, CONTENT_TYPE_VALUE);
+
+                        var response = await client.SendAsync(request);
+
+                        if (response.Content == null)
+                        {
+                            throw new Exception($"{TAG} Response content is empty.");
+                        }
+
+                        var resultJson = await response.Content.ReadAsStringAsync();
+
+                        var jsonSerializerOptions = new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        };
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var resultModel = JsonSerializer.Deserialize<IEnumerable<TranslationResultModel>>(resultJson, jsonSerializerOptions);
+
+                            logger.LogInformation($"${TAG} The request has been processed. => Translated.");
+
+                            if (resultSet == null)
+                            {
+                                resultSet = new List<TranslationResultModel>(resultModel);
+                            }
+                            else
+                            {
+                                var resultModelIndex = 0;
+                                resultModel.ToList().ForEach((result) =>
+                                {
+                                    var list = resultSet[resultModelIndex].Translations.ToList();
+                                    result.Translations.ToList().ForEach((translation) =>
+                                        {
+
+                                            list.Add(translation);
+
+                                        });
+
+                                    resultSet[resultModelIndex].Translations = list;
+                                    resultModelIndex++;
+                                });
+                            }
+                        }
+                        else
+                        {
+                            var resultModel = JsonSerializer.Deserialize<TranslationErrorResultModel>(resultJson, jsonSerializerOptions);
+
+                            logger.LogInformation($"${TAG} The request does not has been processed. => Not  Translated.");
+
+                            throw new SomethingWrongException<TranslationErrorResultModel>(resultModel.Error.Message, resultModel);
+                        }
                     }
+                }                
+            }
 
-                    var resultJson = await response.Content.ReadAsStringAsync();
+            return resultSet;
+        }
 
-                    var jsonSerializerOptions = new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    };
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var resultModel = JsonSerializer.Deserialize<TranslationResultModel[]>(resultJson, jsonSerializerOptions);
-
-                        logger.LogInformation($"${TAG} The request has been processed. => Translated.");
-
-                        return resultModel;
-                    }
-                    else
-                    {
-                        var resultModel = JsonSerializer.Deserialize<TranslationErrorResultModel>(resultJson, jsonSerializerOptions);
-
-                        logger.LogInformation($"${TAG} The request does not has been processed. => Not  Translated.");
-
-                        throw new SomethingWrongException<TranslationErrorResultModel>(resultModel.Error.Message, resultModel);
-                    }
+        private IEnumerable<Uri> getRequestUri(TranslationRequestModel model)
+        {
+            if (model.IsTranslationEachLanguage)
+            {
+                foreach(var language in model.ToLanguages)
+                {
+                    yield return getRequestUri(model, language);
                 }
+            }
+            else
+            {
+                yield return getRequestUri(model, string.Empty);
             }
         }
 
-        private Uri getRequestUri(TranslationRequestModel model)
+        private Uri getRequestUri(TranslationRequestModel model, string languageCode = "")
         {
             var endpoint = azureTranslatorConnectionOptions.Endpoint;
             if (endpoint.EndsWith("/"))
@@ -98,7 +139,16 @@ namespace Sample.MultilingualContent.Services
                 endpoint = endpoint.Substring(0, endpoint.Length - 1);
             }
 
-            var url = $"{endpoint}{TRANSLATOR_ROUTE}&to={String.Join("&to=", model.ToLanguages)}";
+            var url = $"{endpoint}{TRANSLATOR_ROUTE}";
+
+            if (string.IsNullOrWhiteSpace(languageCode))
+            {
+                url = $"{url}&to={String.Join("&to=", model.ToLanguages)}";
+            }
+            else
+            {
+                url = $"{url}&to={languageCode}";
+            }
 
             if (!String.IsNullOrWhiteSpace(model.FromLanguage))
             {
@@ -158,7 +208,7 @@ namespace Sample.MultilingualContent.Services
             }
         }
 
-        private void ValidateRequestbody(TranslationRequestModel model)
+        private void ValidateRequestbody(TranslationRequestModel model, bool each = false)
         {
             var errorMessage = new List<string>();
 
@@ -179,7 +229,7 @@ namespace Sample.MultilingualContent.Services
                 // https://docs.microsoft.com/en-us/azure/cognitive-services/translator/request-limits#character-and-array-limits-per-request
                 // Max 10,000 characters. 
                 // Request to translate (+1) and Response to be translated ( + count of to translate languages)
-                var contentLength = input.Text.Length * (model.ToLanguages.Count() + 1);
+                var contentLength = input.Text.Length * ((each ? 1 : model.ToLanguages.Count()) + 1);
                 
                 logger.LogInformation($"{TAG} Calculated characters={contentLength}");
 
