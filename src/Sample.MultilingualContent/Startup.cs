@@ -16,7 +16,12 @@ using Microsoft.OpenApi.Models;
 
 using Sample.MultilingualContent.Data;
 using Sample.MultilingualContent.Repositories;
-using Sample.MultilingualContent.Services;
+
+
+using kr.bbon.AspNetCore;
+using kr.bbon.Azure.Translator.Services;
+using kr.bbon.Azure.Translator.Services.Strategies;
+using Sample.MultilingualContent.Domains;
 
 namespace Sample.MultilingualContent
 {
@@ -32,10 +37,11 @@ namespace Sample.MultilingualContent
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddOptions<AzureTranslatorConnectionOptions>().Configure(options =>
-            {
-                Configuration.GetSection(AzureTranslatorConnectionOptions.Name).Bind(options);
-            });
+            services.Configure<AppOptions>(Configuration.GetSection(AppOptions.Name));
+            services.Configure<AppOptions>(Configuration.GetSection(AppOptions.Name));
+            services.Configure<AzureTranslatorConnectionOptions>(Configuration.GetSection(AzureTranslatorConnectionOptions.Name));
+            services.Configure<AzureStorageOptions>(Configuration.GetSection(AzureStorageOptions.Name));
+
 
             services.AddDbContext<AppDbContext>(builder =>
             {
@@ -46,20 +52,20 @@ namespace Sample.MultilingualContent
             services.AddTransient<ILanguageRepository, LanguageRepository>();
             services.AddTransient<IPostRepository, PostRepository>();
             services.AddTransient<IBookRepository, BookRepository>();
-            services.AddTransient<ITranslatorService, TranslatorService>();
+
+            services.AddTransient<IStorageService<TranslateAzureBlobStorageContainer>, AzureBlobStorageService<TranslateAzureBlobStorageContainer>>();
+            services.AddTransient<ITextTranslatorService, TextTranslatorService>();
+            services.AddTransient<IDocumentTranslationService, DocumentTranslationService>();
+
+            services.AddTransient<IPostsDomain, PostsDomain>();
+
+            services.AddTransient<ITranslatedDocumentNamingStrategy, TranslatedDocumentNamingStrategy>();
+
+            var defaultVersion = new ApiVersion(1, 1);
 
             services.AddControllers();
-            services.AddApiVersioning(options =>
-            {
-                options.AssumeDefaultVersionWhenUnspecified = true;
-                options.DefaultApiVersion = new ApiVersion(1, 0);
-                options.ApiVersionReader = new HeaderApiVersionReader("api-version");
-            });
 
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Sample.MultilingualContent", Version = "v1" });
-            });
+            services.AddApiVersioningAndSwaggerGen<ConfigureSwaggerOptions>(defaultVersion);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -77,8 +83,7 @@ namespace Sample.MultilingualContent
                 }
 
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sample.MultilingualContent v1"));
+                app.UseSwaggerUIWithApiVersioning();
             }
 
             app.UseHttpsRedirection();
@@ -89,7 +94,6 @@ namespace Sample.MultilingualContent
 
             app.UseEndpoints(endpoints =>
             {
-                //endpoints.MapAreaControllerRoute("api", "api", "[area]/[controller]");
                 endpoints.MapControllers();
             });
         }

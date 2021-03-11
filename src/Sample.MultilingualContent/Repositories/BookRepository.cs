@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+using kr.bbon.Azure.Translator.Services;
+using kr.bbon.Azure.Translator.Services.Models.TextTranslation.TranslationRequest;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Sample.MultilingualContent.Data;
 using Sample.MultilingualContent.Entities;
 using Sample.MultilingualContent.Models;
-using Sample.MultilingualContent.Services;
+
 
 namespace Sample.MultilingualContent.Repositories
 {
@@ -27,7 +30,10 @@ namespace Sample.MultilingualContent.Repositories
     {
         private const string EMPTY_STRING = "";
 
-        public BookRepository(AppDbContext dbContext, ITranslatorService translatorService, ILoggerFactory loggerFactory)
+        public BookRepository(
+            AppDbContext dbContext, 
+            ITextTranslatorService translatorService, 
+            ILoggerFactory loggerFactory)
         {
             this.dbContext = dbContext;
             this.translatorService = translatorService;
@@ -100,11 +106,11 @@ namespace Sample.MultilingualContent.Repositories
 
                     if (criteriaLanguage != null)
                     {
-                        var translationResult = await translatorService.TranslateAsync(new TranslationRequestModel
+                        var translationResult = await translatorService.TranslateAsync(new RequestModel
                         {
                             Inputs = new[] {
-                                    new TranslationRequestInputModel(criteriaContent.Title),
-                                    new TranslationRequestInputModel(criteriaContent.Author)
+                                    new Input(criteriaContent.Title),
+                                    new Input(criteriaContent.Author)
                                 },
                             ToLanguages = targetLanguages.Select(x => x.Code).ToArray(),
                             FromLanguage = model.CriteriaLanguageCode,
@@ -227,7 +233,7 @@ namespace Sample.MultilingualContent.Repositories
 
 
         private readonly AppDbContext dbContext;
-        private readonly ITranslatorService translatorService;
+        private readonly ITextTranslatorService translatorService;
         private readonly ILogger logger;
     }
 }
