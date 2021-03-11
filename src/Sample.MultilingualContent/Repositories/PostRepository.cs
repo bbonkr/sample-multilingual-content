@@ -9,7 +9,8 @@ using Microsoft.Extensions.Logging;
 using Sample.MultilingualContent.Data;
 using Sample.MultilingualContent.Entities;
 using Sample.MultilingualContent.Models;
-using Sample.MultilingualContent.Services;
+using kr.bbon.Azure.Translator.Services;
+using kr.bbon.Azure.Translator.Services.Models.TextTranslation.TranslationRequest;
 
 namespace Sample.MultilingualContent.Repositories
 {
@@ -30,7 +31,10 @@ namespace Sample.MultilingualContent.Repositories
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
+        [Obsolete]
         Task<PostDetailModel> SaveAsync( PostSaveRequestModel model);
+
+        Task<PostDetailModel> SaveAsync(string postId, IList<Localization> titleSet, IList<Localization> contentSet);
 
         Task DeleteAsync(string id);
     }
@@ -39,7 +43,7 @@ namespace Sample.MultilingualContent.Repositories
     {
         private const string EMPTY_STRING = "";
 
-        public PostRepository(AppDbContext dbContext, ITranslatorService translatorService, ILoggerFactory loggerFactory)
+        public PostRepository(AppDbContext dbContext, ITextTranslatorService translatorService, ILoggerFactory loggerFactory)
         {
             this.dbContext = dbContext;
             this.translatorService = translatorService;
@@ -111,6 +115,7 @@ namespace Sample.MultilingualContent.Repositories
         }
 
         /// <inheritdoc />
+        [Obsolete]
         public async Task<PostDetailModel> SaveAsync(PostSaveRequestModel model)
         {
             var postId = model.Id;
@@ -120,7 +125,7 @@ namespace Sample.MultilingualContent.Repositories
                 .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
                 .Where(post => !post.IsDeleted && post.Id == model.Id).FirstOrDefault();
 
-            if(!String.IsNullOrWhiteSpace( model.Id) && post == null)
+            if(!String.IsNullOrWhiteSpace(model.Id) && post == null)
             {
                 throw new RecordNotFoundException($"Could not find a post ({model.Id})");
             }
@@ -129,7 +134,7 @@ namespace Sample.MultilingualContent.Repositories
 
             var titleSet = model.PostContents.Select(postContent => new Localization
             {
-                LanguageId = languages.Where(x=>x.Code == postContent.LanguageCode).FirstOrDefault()?.Id,
+                LanguageId = languages.Where(x => x.Code == postContent.LanguageCode).FirstOrDefault()?.Id,
                 Value = postContent.Title,
             }).ToList();
 
@@ -150,11 +155,11 @@ namespace Sample.MultilingualContent.Repositories
 
                     if (criteriaLanguage != null)
                     {
-                        var translationResult = await translatorService.TranslateAsync(new TranslationRequestModel
+                        var translationResult = await translatorService.TranslateAsync(new RequestModel
                         {
                             Inputs = new[] {
-                                    new TranslationRequestInputModel(criteriaContent.Title),
-                                    new TranslationRequestInputModel(criteriaContent.Content)
+                                    new Input(criteriaContent.Title),
+                                    new Input(criteriaContent.Content)
                                 },
                             ToLanguages = targetLanguages.Select(x => x.Code).ToArray(),
                             FromLanguage = model.CriteriaLanguageCode,
@@ -280,6 +285,72 @@ namespace Sample.MultilingualContent.Repositories
             return postModel;
         }
 
+        public async Task<PostDetailModel> SaveAsync(string postId, IList<Localization> titleSet, IList<Localization> contentSet)
+        {
+            var post = dbContext.Posts
+                .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
+                .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
+                .Where(post => !post.IsDeleted && post.Id == postId).FirstOrDefault();
+
+            if (!String.IsNullOrWhiteSpace(postId) && post == null)
+            {
+                throw new RecordNotFoundException($"Could not find a post ({postId})");
+            }
+
+            if (post == null)
+            {
+                var newPost = new Post
+                {
+                    Title = new LocalizationSet
+                    {
+                        Contents = titleSet,
+                    },
+                    Content = new LocalizationSet
+                    {
+                        Contents = contentSet,
+                    },
+                };
+
+                var insertedPostEntry = dbContext.Posts.Add(newPost);
+
+                postId = insertedPostEntry.Entity.Id;
+            }
+            else
+            {
+                foreach (var title in titleSet)
+                {
+                    var titleValue = post.Title.Contents.Where(t => t.LanguageId == title.LanguageId).FirstOrDefault();
+                    if (titleValue != null)
+                    {
+                        titleValue.Value = title.Value;
+                    }
+                    else
+                    {
+                        post.Title.Contents.Add(title);
+                    }
+                }
+
+                foreach (var content in contentSet)
+                {
+                    var contentValue = post.Content.Contents.Where(t => t.LanguageId == content.LanguageId).FirstOrDefault();
+                    if (contentValue != null)
+                    {
+                        contentValue.Value = content.Value;
+                    }
+                    else
+                    {
+                        post.Content.Contents.Add(contentValue);
+                    }
+                }
+            }
+
+            await dbContext.SaveChangesAsync();
+
+            var postModel = await GetPostAsync(postId);
+
+            return postModel;
+        }
+
         public async Task DeleteAsync(string id)
         {
             var post = dbContext.Posts
@@ -298,7 +369,7 @@ namespace Sample.MultilingualContent.Repositories
         }
 
         private readonly AppDbContext dbContext;
-        private readonly ITranslatorService translatorService;
+        private readonly ITextTranslatorService translatorService;
         private readonly ILogger logger;
     }
 }
