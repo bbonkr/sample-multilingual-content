@@ -9,10 +9,11 @@ using Microsoft.Extensions.Logging;
 
 using Sample.MultilingualContent.Models;
 using Sample.MultilingualContent.Repositories;
+using kr.bbon.AspNetCore.Mvc;
 
 namespace Sample.MultilingualContent.Controllers
 {
-    [ApiVersion("1.0")]
+    [ApiVersion("1.1")]
     [ApiController]
     [Area("api")]
     [Route("[area]/v{version:apiVersion}/[controller]")]
