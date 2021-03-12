@@ -90,8 +90,8 @@ namespace Sample.MultilingualContent.Repositories
             var languages = languageQuery.AsNoTracking().ToList();
 
             var query = dbContext.Posts
-                .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
-                .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
+                .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Localizations)
+                .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Localizations)
                 .AsSingleQuery()
                 .AsNoTracking()
                 .Where(post => !post.IsDeleted && post.Id == id);
@@ -103,8 +103,8 @@ namespace Sample.MultilingualContent.Repositories
             {
                 var contents = languages.Select(lang => new PostModel(
                     postEntry.Id,
-                    postEntry.Title.Contents.Where(x => lang.Id == x.LanguageId).FirstOrDefault().Value,
-                    postEntry.Content.Contents.Where(x => lang.Id == x.LanguageId).FirstOrDefault().Value,
+                    postEntry.Title.Localizations.Where(x => lang.Id == x.LanguageId).FirstOrDefault().Value,
+                    postEntry.Content.Localizations.Where(x => lang.Id == x.LanguageId).FirstOrDefault().Value,
                     lang.Code));
 
 
@@ -121,8 +121,8 @@ namespace Sample.MultilingualContent.Repositories
             var postId = model.Id;
 
             var post = dbContext.Posts
-                .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
-                .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
+                .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Localizations)
+                .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Localizations)
                 .Where(post => !post.IsDeleted && post.Id == model.Id).FirstOrDefault();
 
             if(!String.IsNullOrWhiteSpace(model.Id) && post == null)
@@ -237,11 +237,11 @@ namespace Sample.MultilingualContent.Repositories
                 {
                     Title = new LocalizationSet
                     {
-                        Contents = titleSet,
+                        Localizations = titleSet,
                     },
                     Content = new LocalizationSet
                     {
-                        Contents = contentSet,
+                        Localizations = contentSet,
                     },
                 };
 
@@ -253,27 +253,27 @@ namespace Sample.MultilingualContent.Repositories
             {
                 foreach (var title in titleSet)
                 {
-                    var titleValue = post.Title.Contents.Where(t => t.LanguageId == title.LanguageId).FirstOrDefault();
+                    var titleValue = post.Title.Localizations.Where(t => t.LanguageId == title.LanguageId).FirstOrDefault();
                     if (titleValue != null)
                     {
                         titleValue.Value = title.Value;
                     }
                     else
                     {
-                        post.Title.Contents.Add(title);
+                        post.Title.Localizations.Add(title);
                     }
                 }
 
                 foreach (var content in contentSet)
                 {
-                    var contentValue = post.Content.Contents.Where(t => t.LanguageId == content.LanguageId).FirstOrDefault();
+                    var contentValue = post.Content.Localizations.Where(t => t.LanguageId == content.LanguageId).FirstOrDefault();
                     if (contentValue != null)
                     {
                         contentValue.Value = content.Value;
                     }
                     else
                     {
-                        post.Content.Contents.Add(contentValue);
+                        post.Content.Localizations.Add(contentValue);
                     }
                 }
             }
@@ -288,8 +288,8 @@ namespace Sample.MultilingualContent.Repositories
         public async Task<PostDetailModel> SaveAsync(string postId, IList<Localization> titleSet, IList<Localization> contentSet)
         {
             var post = dbContext.Posts
-                .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
-                .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
+                .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Localizations)
+                .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Localizations)
                 .Where(post => !post.IsDeleted && post.Id == postId).FirstOrDefault();
 
             if (!String.IsNullOrWhiteSpace(postId) && post == null)
@@ -303,11 +303,11 @@ namespace Sample.MultilingualContent.Repositories
                 {
                     Title = new LocalizationSet
                     {
-                        Contents = titleSet,
+                        Localizations = titleSet,
                     },
                     Content = new LocalizationSet
                     {
-                        Contents = contentSet,
+                        Localizations = contentSet,
                     },
                 };
 
@@ -319,27 +319,27 @@ namespace Sample.MultilingualContent.Repositories
             {
                 foreach (var title in titleSet)
                 {
-                    var titleValue = post.Title.Contents.Where(t => t.LanguageId == title.LanguageId).FirstOrDefault();
+                    var titleValue = post.Title.Localizations.Where(t => t.LanguageId == title.LanguageId).FirstOrDefault();
                     if (titleValue != null)
                     {
                         titleValue.Value = title.Value;
                     }
                     else
                     {
-                        post.Title.Contents.Add(title);
+                        post.Title.Localizations.Add(title);
                     }
                 }
 
                 foreach (var content in contentSet)
                 {
-                    var contentValue = post.Content.Contents.Where(t => t.LanguageId == content.LanguageId).FirstOrDefault();
+                    var contentValue = post.Content.Localizations.Where(t => t.LanguageId == content.LanguageId).FirstOrDefault();
                     if (contentValue != null)
                     {
                         contentValue.Value = content.Value;
                     }
                     else
                     {
-                        post.Content.Contents.Add(contentValue);
+                        post.Content.Localizations.Add(contentValue);
                     }
                 }
             }
@@ -354,8 +354,8 @@ namespace Sample.MultilingualContent.Repositories
         public async Task DeleteAsync(string id)
         {
             var post = dbContext.Posts
-              .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Contents)
-              .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Contents)
+              .Include(post => post.Title).ThenInclude(localizationSet => localizationSet.Localizations)
+              .Include(post => post.Content).ThenInclude(localizationSet => localizationSet.Localizations)
               .Where(post => !post.IsDeleted && post.Id == id).FirstOrDefault();
 
             if (post == null)
