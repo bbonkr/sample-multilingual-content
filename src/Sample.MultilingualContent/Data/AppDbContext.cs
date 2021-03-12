@@ -49,14 +49,14 @@ namespace Sample.MultilingualContent.Data
                 .IsRequired()
                 .ValueGeneratedOnAdd();            
             modelBuilder.Entity<LocalizationSet>()
-                .HasMany(x => x.Contents)
+                .HasMany(x => x.Localizations)
                 .WithOne(x => x.LocalizationSet)
                 .HasForeignKey(x => x.Id);
 
             modelBuilder.Entity<Localization>().HasKey(x => new { x.Id, x.LanguageId });
             modelBuilder.Entity<Localization>().Property(x => x.Id).IsRequired();
             modelBuilder.Entity<Localization>().Property(x => x.LanguageId).IsRequired();
-            modelBuilder.Entity<Localization>().HasOne(x => x.LocalizationSet).WithMany(x => x.Contents).HasForeignKey(x => x.Id);
+            modelBuilder.Entity<Localization>().HasOne(x => x.LocalizationSet).WithMany(x => x.Localizations).HasForeignKey(x => x.Id);
             modelBuilder.Entity<Localization>().HasOne(x => x.Language).WithMany().HasForeignKey(x => x.LanguageId);
 
             modelBuilder.Entity<Book>().HasKey(x => x.Id);
