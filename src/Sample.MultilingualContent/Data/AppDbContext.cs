@@ -11,10 +11,8 @@ namespace Sample.MultilingualContent.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-
-        }
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options) { }
 
         public DbSet<Post> Posts { get; set; }
 
@@ -29,7 +27,9 @@ namespace Sample.MultilingualContent.Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Language>().HasKey(x => x.Id);
-            modelBuilder.Entity<Language>().Property(x => x.Id).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Language>().Property(x => x.Id)
+                .IsRequired()
+                .ValueGeneratedOnAdd();
             modelBuilder.Entity<Language>().Property(x => x.Code).HasMaxLength(40).IsRequired();
             modelBuilder.Entity<Language>().HasIndex(x => x.Code).IsUnique();
 
@@ -37,8 +37,7 @@ namespace Sample.MultilingualContent.Data
             modelBuilder.Entity<Post>()
                 .HasOne(x => x.Title)
                 .WithOne()
-                .HasForeignKey<Post>(x => x.TitleId)
-                ;
+                .HasForeignKey<Post>(x => x.TitleId);
             modelBuilder.Entity<Post>()
                 .HasOne(x => x.Content)
                 .WithOne()
@@ -46,8 +45,9 @@ namespace Sample.MultilingualContent.Data
                 ;
 
             modelBuilder.Entity<LocalizationSet>().HasKey(x => x.Id);
-            modelBuilder.Entity<LocalizationSet>().Property(x => x.Id).ValueGeneratedOnAdd();
-            
+            modelBuilder.Entity<LocalizationSet>().Property(x => x.Id)
+                .IsRequired()
+                .ValueGeneratedOnAdd();            
             modelBuilder.Entity<LocalizationSet>()
                 .HasMany(x => x.Contents)
                 .WithOne(x => x.LocalizationSet)
@@ -57,12 +57,16 @@ namespace Sample.MultilingualContent.Data
             modelBuilder.Entity<Localization>().Property(x => x.Id).IsRequired();
             modelBuilder.Entity<Localization>().Property(x => x.LanguageId).IsRequired();
             modelBuilder.Entity<Localization>().HasOne(x => x.LocalizationSet).WithMany(x => x.Contents).HasForeignKey(x => x.Id);
-            modelBuilder.Entity<Localization>().HasOne(x => x.Language).WithMany(x => x.Localizations).HasForeignKey(x => x.LanguageId);
+            modelBuilder.Entity<Localization>().HasOne(x => x.Language).WithMany().HasForeignKey(x => x.LanguageId);
 
             modelBuilder.Entity<Book>().HasKey(x => x.Id);
-            modelBuilder.Entity<Book>().Property(x => x.Id).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Book>().Property(x => x.Id)
+                .IsRequired()
+                .ValueGeneratedOnAdd();
 
             modelBuilder.Entity<BookLocalization>().HasKey(x => new { x.Id, x.LanguageId });
+            modelBuilder.Entity<BookLocalization>().Property(x => x.Id).IsRequired();
+            modelBuilder.Entity<BookLocalization>().Property(x => x.LanguageId).IsRequired();
             modelBuilder.Entity<BookLocalization>().HasOne(x => x.Book).WithMany(x => x.Localizations).HasForeignKey(x => x.Id);
             modelBuilder.Entity<BookLocalization>().HasOne(x => x.Language).WithMany().HasForeignKey(x => x.LanguageId);
         }
