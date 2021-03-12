@@ -88,6 +88,29 @@ CREATE NONCLUSTERED INDEX [IX_Localizations_LanguageId]
 GO
 ```
 
+## Configuration
+
+Edit src/Sample.MultilingualContent/appsettings.json
+
+```json
+{
+    // ...
+    "ConnectionStrings": {
+        "Default": "database connection string here"
+    },
+    "Translator": {
+        "Endpoint": "endpoint here",
+        "SubscriptionKey": "subscription key here",
+        "Region": "region here",
+        "ResourceName": "name of resource"
+    },
+    "AzureStorage": {
+        "ConnectionString": "azure storage connection string here"
+    },
+    // ...
+}
+```
+
 ## Specifications
 
 Base URL: `<scheme>://<host>:<port>/api/v1.1`
