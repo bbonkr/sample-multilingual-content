@@ -2,11 +2,19 @@ How to store multilingual content.
 
 Let's think about it.
 
+## Prerequirement
+
+- Azure Storage Account
+- Azure Tranlsator
+
+
 ## Requirement
 
 - .NET 5
-- API Web app with ASP.NET Core
+- ASP.NET Core
 - Entity Framework Core
+- RDBMS (here SQL Server)
+
 
 ## Entities
 
@@ -82,9 +90,9 @@ GO
 
 ## Specifications
 
-Base URL: `<scheme>://<host>:<port>/api/v1.0`
+Base URL: `<scheme>://<host>:<port>/api/v1.1`
 
-e.g.) https://localhost:5001/api/v1.0/languages
+e.g.) https://localhost:5001/api/v1.1/languages
 
 ### Support languages
 
@@ -247,17 +255,17 @@ Schema:
 
 ```
 {
-  criteriaLanguageCode: string,
+  criteriaLanguageCode: string (Requred) If use translation, post contents can be multiple, so need to specify the criteria language.
   postContents: [
     {
-      title: string,
-      content: string,
-      languageCode: string
+      title: string (Required) The post title
+      content: string (Required) The post content
+      languageCode: string (Required) The post language written by
     }
   ],
-  useTranslation: boolean
-  isHtmlContent: boolean
-  isTranslationEachLanguage: boolean
+  useTranslation: boolean (optional) Use translation
+  isHtmlContent: boolean (optional) The post content is html or not
+  isTranslationEachLanguage: boolean (optional) [Deprecated] 
 }
 ```
 
@@ -342,18 +350,18 @@ Schema:
 
 ```
 {
-  id: string
-  criteriaLanguageCode: string
+  id: string (Required) The post identifier
+  criteriaLanguageCode: string (Requred) If use translation, post contents can be multiple, so need to specify the criteria language.
   postContents: [
     {
-      title: string
-      content: string
-      languageCode: string
+      title: string (Required) The post title
+      content: string (Required) The post content
+      languageCode: string (Required) The post language written by
     }
   ],
-  useTranslation: boolean
-  isHtmlContent: boolean
-  isTranslationEachLanguage: boolean  
+  useTranslation: boolean (optional) Use translation
+  isHtmlContent: boolean (optional) The post content is html or not
+  isTranslationEachLanguage: boolean (optional) [Deprecated] 
 }
 ```
 

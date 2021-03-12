@@ -28,6 +28,6 @@ namespace Sample.MultilingualContent.Entities
         /// </summary>
         public string Description { get; set; }
 
-        public virtual IList<Localization> Localizations { get; set; }
+        //public virtual IList<Localization> Localizations { get; set; }
     }
 }
